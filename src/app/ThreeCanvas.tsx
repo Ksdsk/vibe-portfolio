@@ -17,9 +17,19 @@ const throttle = (func: Function, limit: number) => {
   }
 };
 
-export default function ThreeCanvas() {
+export default function ThreeCanvas({ cardYOffset = 0, cardZRotation = 0 }: { cardYOffset?: number, cardZRotation?: number }) {
   const mountRef = useRef<HTMLDivElement>(null);
   const animationRef = useRef<number | undefined>(undefined);
+  const cardYOffsetRef = useRef(cardYOffset);
+  const cardZRotationRef = useRef(cardZRotation);
+
+  // Keep the ref updated with the latest prop value
+  useEffect(() => {
+    cardYOffsetRef.current = cardYOffset;
+  }, [cardYOffset]);
+  useEffect(() => {
+    cardZRotationRef.current = cardZRotation;
+  }, [cardZRotation]);
 
   useEffect(() => {
     const mount = mountRef.current;
@@ -49,7 +59,7 @@ export default function ThreeCanvas() {
       powerPreference: "high-performance"
     });
     renderer.setSize(mount.clientWidth, mount.clientHeight);
-    renderer.setClearColor(0x000000, 0);
+    renderer.setClearColor(0x000000, 1);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -112,15 +122,29 @@ export default function ThreeCanvas() {
 
     // Add a spot light that shines on the face of the card
     const spotLight = new THREE.SpotLight(0xffffff, 2.2);
-    spotLight.position.set(0, 0, 3); // In front of the card
+    spotLight.position.set(0, 0, 5); // Further in front of the card
     spotLight.target.position.set(0, 0, 0); // Aimed at the center of the card
-    spotLight.angle = 3.5; // Much wider beam
+    spotLight.angle = Math.PI / 2; // Maximum wide beam
     spotLight.penumbra = 0.4; // Softer edges
     spotLight.castShadow = true;
     spotLight.shadow.mapSize.width = 2048;
     spotLight.shadow.mapSize.height = 2048;
     scene.add(spotLight);
     scene.add(spotLight.target);
+
+    // Add ambient light for overall illumination
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
+    scene.add(ambientLight);
+
+    // (HemisphereLight removed to prevent blue sheen in the background)
+
+    // Add a second directional light for better hand illumination
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+    directionalLight.position.set(2, 1, 2);
+    directionalLight.castShadow = true;
+    directionalLight.shadow.mapSize.width = 1024;
+    directionalLight.shadow.mapSize.height = 1024;
+    scene.add(directionalLight);
 
     // Create a group for the card and text so they move together
     const cardGroup = new THREE.Group();
@@ -144,13 +168,16 @@ export default function ThreeCanvas() {
     const textOverlay = new THREE.Mesh(textOverlayGeometry, textOverlayMaterial);
     textOverlay.position.set(0, 0, 0.08); // Slightly above card surface
     cardGroup.add(textOverlay);
-    
     scene.add(cardGroup);
+
+    // (Remove the soft spotlight effect white circle mesh from the scene)
+
+    // Remove the cartoon hand, wrist, and both sleeves (sphere, wrist, innerSleeve, outerSleeve) from the scene. Only keep the card, text overlay, and environment.
 
     // Add a glass wall behind all components
     const glassWallGeometry = new THREE.PlaneGeometry(20, 20); // Large enough to cover the entire view
     const glassWallMaterial = new THREE.MeshPhysicalMaterial({
-      color: 0x88ccff, // Light blue tint
+      color: 0xffffff, // White for neutral glass
       transparent: true,
       opacity: 0.5, // More visible for testing
       metalness: 0.1, // Slight metallic quality
@@ -165,6 +192,91 @@ export default function ThreeCanvas() {
     glassWall.position.set(0, 0, -5); // Behind the card
     glassWall.receiveShadow = true;
     scene.add(glassWall);
+
+    // Aurora/light streaks background effect - Refined version
+    const auroraColors = [
+      0x60a5fa, // blue
+      0xa78bfa, // purple  
+      0xf472b6, // pink
+      0x34d399, // emerald
+      0xfbbf24, // amber
+      0xec4899  // rose
+    ];
+    
+    let auroraPlanes: THREE.Mesh[] = [];
+    let particles: THREE.Mesh[] = [];
+    const auroraCount = 6; // Increased from 3 to 6 for more variety
+    
+    for (let i = 0; i < auroraCount; i++) {
+      // Create more organic, varied shapes
+      const width = 2.5 + Math.random() * 2; // Varied widths
+      const height = 0.4 + Math.random() * 0.8; // Varied heights
+      
+      // Create curved geometry for more organic look
+      const curve = new THREE.CubicBezierCurve3(
+        new THREE.Vector3(-width/2, -height/2, 0),
+        new THREE.Vector3(-width/4, height/2, 0),
+        new THREE.Vector3(width/4, -height/2, 0),
+        new THREE.Vector3(width/2, height/2, 0)
+      );
+      
+      const points = curve.getPoints(50);
+      const geometry = new THREE.BufferGeometry().setFromPoints(points);
+      
+      // Create tube geometry for more organic aurora shapes
+      const tubeGeometry = new THREE.TubeGeometry(curve, 20, 0.1, 8, false);
+      
+      const mat = new THREE.MeshBasicMaterial({
+        color: auroraColors[i % auroraColors.length],
+        transparent: true,
+        opacity: 0.15 + Math.random() * 0.1, // Varied opacity
+        depthWrite: false,
+        blending: THREE.AdditiveBlending // Additive blending for glow effect
+      });
+      
+      const mesh = new THREE.Mesh(tubeGeometry, mat);
+      
+      // More varied positioning
+      mesh.position.set(
+        -1.5 + i * 0.6 + Math.random() * 0.4, // Varied X positions
+        0.8 - i * 0.3 + Math.random() * 0.6,  // Varied Y positions
+        -2.5 - i * 0.3 - Math.random() * 0.5   // Varied Z positions
+      );
+      
+      // More varied rotations
+      mesh.rotation.z = Math.PI / 6 * (i - auroraCount/2) + Math.random() * 0.5;
+      mesh.rotation.x = Math.random() * 0.3;
+      mesh.rotation.y = Math.random() * 0.3;
+      
+      scene.add(mesh);
+      auroraPlanes.push(mesh);
+    }
+
+    // Add additional floating light particles for enhanced effect
+    const particleCount = 12;
+    
+    for (let i = 0; i < particleCount; i++) {
+      // Use CircleGeometry for smooth 2D circular particles
+      const particleRadius = 0.02 + Math.random() * 0.03;
+      const particleGeometry = new THREE.CircleGeometry(particleRadius, 32); // 32 segments for smooth circle
+      const particleMaterial = new THREE.MeshBasicMaterial({
+        color: auroraColors[Math.floor(Math.random() * auroraColors.length)],
+        transparent: true,
+        opacity: 0.3 + Math.random() * 0.4,
+        blending: THREE.AdditiveBlending,
+        side: THREE.DoubleSide // Render both sides for better visibility
+      });
+      
+      const particle = new THREE.Mesh(particleGeometry, particleMaterial);
+      particle.position.set(
+        -2 + Math.random() * 4,
+        -1 + Math.random() * 2,
+        -3 - Math.random() * 2
+      );
+      
+      scene.add(particle);
+      particles.push(particle);
+    }
 
     // Mouse interaction with throttling
     let targetRotationX = 0;
@@ -207,17 +319,70 @@ export default function ThreeCanvas() {
       // Apply target rotations with smooth interpolation
       cardGroup.rotation.x += (targetRotationX - cardGroup.rotation.x) * 0.1;
       cardGroup.rotation.y += (targetRotationY - cardGroup.rotation.y) * 0.1;
+      cardGroup.position.y += (cardYOffset - cardGroup.position.y) * 0.1;
       
       renderer.render(scene, camera);
       animationRef.current = requestAnimationFrame(animate);
     };
-    animate();
+    // Remove the call to animate(); Only call animateAurora() at the end of the effect.
 
-    // Optimized resize handler for orthographic camera
-    const handleResize = throttle(() => {
+    // Animate aurora planes and particles in the animation loop
+    function animateAurora() {
+      const t = performance.now() * 0.0003;
+      
+      // Animate aurora tubes with more complex movement
+      auroraPlanes.forEach((mesh, i) => {
+        const material = mesh.material as THREE.MeshBasicMaterial;
+        material.opacity = 0.12 + 0.1 * Math.sin(t + i * 1.5);
+        
+        // More complex movement patterns
+        mesh.position.x = -1.5 + i * 0.6 + Math.sin(t + i * 0.8) * 0.4;
+        mesh.position.y = 0.8 - i * 0.3 + Math.cos(t + i * 1.2) * 0.3;
+        mesh.position.z = -2.5 - i * 0.3 + Math.sin(t + i * 0.5) * 0.2;
+        
+        // Rotate auroras for more dynamic effect
+        mesh.rotation.z = Math.PI / 6 * (i - auroraCount/2) + Math.sin(t + i * 1.8) * 0.1;
+        mesh.rotation.x = Math.sin(t + i * 0.7) * 0.05;
+        mesh.rotation.y = Math.cos(t + i * 0.9) * 0.05;
+        
+        // Subtle scale animation
+        const scale = 1 + 0.1 * Math.sin(t + i * 2.1);
+        mesh.scale.set(scale, scale, scale);
+      });
+      
+      // Animate floating particles
+      particles.forEach((particle, i) => {
+        const material = particle.material as THREE.MeshBasicMaterial;
+        material.opacity = 0.2 + 0.3 * Math.sin(t + i * 0.6);
+        
+        // Floating particle movement
+        particle.position.x = -2 + Math.sin(t + i * 0.4) * 2;
+        particle.position.y = -1 + Math.cos(t + i * 0.7) * 1.5;
+        particle.position.z = -3 + Math.sin(t + i * 0.3) * 1;
+        
+        // Pulse scale for breathing effect
+        const pulseScale = 1 + 0.3 * Math.sin(t + i * 1.3);
+        particle.scale.set(pulseScale, pulseScale, pulseScale);
+      });
+      
+      // Card animation
+      cardGroup.rotation.x += (targetRotationX - cardGroup.rotation.x) * 0.1;
+      cardGroup.rotation.y += (targetRotationY - cardGroup.rotation.y) * 0.1;
+      cardGroup.position.y += (cardYOffsetRef.current - cardGroup.position.y) * 0.04;
+      cardGroup.rotation.z += (cardZRotationRef.current - cardGroup.rotation.z) * 0.04;
+      renderer.render(scene, camera);
+      animationRef.current = requestAnimationFrame(animateAurora);
+    }
+    animateAurora();
+
+    // Set base card size
+    const BASE_CARD_WIDTH = 4;
+    const BASE_CARD_HEIGHT = 2.5;
+
+    function resizeScene() {
       if (!mount) return;
       const aspect = mount.clientWidth / mount.clientHeight;
-      const frustumHeight = height;
+      const frustumHeight = BASE_CARD_HEIGHT;
       const frustumWidth = frustumHeight * aspect;
       camera.left = -frustumWidth / 2;
       camera.right = frustumWidth / 2;
@@ -225,9 +390,27 @@ export default function ThreeCanvas() {
       camera.bottom = -frustumHeight / 2;
       camera.updateProjectionMatrix();
       renderer.setSize(mount.clientWidth, mount.clientHeight);
-    }, 100);
 
-    window.addEventListener('resize', handleResize);
+      // Responsive scaling factor
+      const scale = Math.min(mount.clientWidth / 900, mount.clientHeight / 600, 1);
+
+      // Responsive card scaling
+      if (cardGroup) {
+        cardGroup.scale.set(scale, scale, 1);
+      }
+      // Responsive aurora scaling
+      auroraPlanes.forEach((mesh, i) => {
+        mesh.scale.set(scale * 1.1, scale * 1.1, 1);
+      });
+      
+      // Responsive particle scaling
+      particles.forEach((particle, i) => {
+        particle.scale.set(scale * 1.2, scale * 1.2, scale * 1.2);
+      });
+    }
+
+    window.addEventListener('resize', resizeScene);
+    resizeScene();
 
     // Cleanup
     return () => {
@@ -236,18 +419,31 @@ export default function ThreeCanvas() {
       }
       mount.removeEventListener('mousemove', handleMouseMove);
       mount.removeEventListener('mouseleave', handleMouseLeave);
-      window.removeEventListener('resize', handleResize);
+      window.removeEventListener('resize', resizeScene);
       
       // Dispose of geometries and materials
       cardGeometry.dispose();
       cardMaterial.dispose();
+      
+      // Dispose of aurora geometries and materials
+      auroraPlanes.forEach(mesh => {
+        mesh.geometry.dispose();
+        (mesh.material as THREE.Material).dispose();
+      });
+      
+      // Dispose of particle geometries and materials
+      particles.forEach(particle => {
+        particle.geometry.dispose();
+        (particle.material as THREE.Material).dispose();
+      });
+      
       renderer.dispose();
       
       if (mount.contains(renderer.domElement)) {
         mount.removeChild(renderer.domElement);
       }
     };
-  }, []);
+  }, []); // Only run once, rely on the ref for updates
 
   return (
     <div
