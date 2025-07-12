@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useEffect, useState, useCallback } from "react";
+import { useState } from "react";
 import ThreeCanvas from "./ThreeCanvas";
 
 export default function Home() {
