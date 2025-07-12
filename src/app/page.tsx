@@ -6,29 +6,18 @@ import ThreeCanvas from "./ThreeCanvas";
 export default function Home() {
   const [cardYOffset, setCardYOffset] = useState(0);
   const [cardZRotation, setCardZRotation] = useState(0);
-  const [isJobModalOpen, setIsJobModalOpen] = useState(false);
-  const [isModalClosing, setIsModalClosing] = useState(false);
-  const [isModalContentLoaded, setIsModalContentLoaded] = useState(false);
-
-  const closeModal = () => {
-    setIsModalClosing(true);
-    setCardYOffset(0);
-    setCardZRotation(0);
-    setTimeout(() => {
-      setIsJobModalOpen(false);
-      setIsModalClosing(false);
-      setIsModalContentLoaded(false);
-    }, 300); // Match animation duration
-  };
+  const [modalAnimationPhase, setModalAnimationPhase] = useState<'closed' | 'open'>('closed');
 
   const openModal = () => {
     setCardYOffset(-3.5);
     setCardZRotation(-0.4);
-    setIsJobModalOpen(true);
-    // Load content after modal animation starts
-    setTimeout(() => {
-      setIsModalContentLoaded(true);
-    }, 150); // Half of animation duration
+    setModalAnimationPhase('open');
+  };
+
+  const closeModal = () => {
+    setCardYOffset(0);
+    setCardZRotation(0);
+    setModalAnimationPhase('closed');
   };
 
   return (
@@ -69,131 +58,136 @@ export default function Home() {
       </div>
 
       {/* Job Modal */}
-      {isJobModalOpen && (
+      <div 
+        className="fixed inset-0 z-50 flex items-center justify-center p-4"
+        onClick={closeModal}
+        style={{
+          pointerEvents: modalAnimationPhase === 'open' ? 'auto' : 'none',
+          opacity: modalAnimationPhase === 'open' ? 1 : 0,
+          transition: 'opacity 0.3s ease-in-out',
+          display: modalAnimationPhase === 'closed' ? 'none' : 'flex'
+        }}
+      >
         <div 
-          className="fixed inset-0 z-50 flex items-center justify-center p-4"
-          onClick={closeModal}
+          className="w-full max-w-4xl h-3/4 bg-black/80 backdrop-blur-sm rounded-2xl border border-white/20 overflow-hidden flex flex-col"
+          style={{
+            background: 'linear-gradient(135deg, rgba(0, 0, 0, 0.9) 0%, rgba(0, 0, 0, 0.8) 100%)',
+            backdropFilter: 'blur(8px)',
+            boxShadow: '0 12px 24px -8px rgba(0,0,0,0.35)',
+            pointerEvents: 'auto'
+          }}
+          onClick={(e) => e.stopPropagation()}
         >
-          <div 
-            className="w-full max-w-4xl h-3/4 bg-black/80 backdrop-blur-sm rounded-2xl border border-white/20 overflow-hidden transition-all duration-300 ease-out flex flex-col"
-            style={{
-              background: 'linear-gradient(135deg, rgba(0, 0, 0, 0.9) 0%, rgba(0, 0, 0, 0.8) 100%)',
-              backdropFilter: 'blur(8px)',
-              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
-              transform: isModalClosing ? 'translateY(100%)' : 'translateY(0)',
-              opacity: isModalClosing ? 0 : 1,
-              animation: isModalClosing ? 'none' : 'slideUp 0.3s ease-out',
-              willChange: 'transform, opacity',
-              backfaceVisibility: 'hidden'
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Modal Header */}
-            <div className="flex justify-between items-center p-6 border-b border-white/10 shrink-0">
-              <h2 className="text-2xl font-bold text-white">Professional Experience</h2>
-              <button 
-                onClick={closeModal}
-                className="text-white/70 hover:text-white transition-colors cursor-pointer"
-              >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-
-            {/* Scrollable Content */}
-            <div className="flex-1 overflow-y-auto p-6" style={{ willChange: 'scroll-position' }}>
-              {!isModalContentLoaded ? (
-                <div className="flex items-center justify-center h-full">
-                  <div className="text-white/60 text-lg">Loading...</div>
+          {/* Modal Header */}
+          <div className="flex justify-between items-center p-6 border-b border-white/10 shrink-0">
+            <h2 className="text-2xl font-bold text-white">Professional Experience</h2>
+            <button 
+              onClick={closeModal}
+              className="text-white/70 hover:text-white transition-colors cursor-pointer"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+          {/* Scrollable Content */}
+          <div className="flex-1 overflow-y-auto p-6" style={{ willChange: 'scroll-position' }}>
+            <div className="space-y-8">
+              {/* Software Development Engineer I */}
+              <div className="bg-white/5 rounded-lg p-6 border border-white/10" style={{ backdropFilter: 'none' }}>
+                <div className="flex justify-between items-start mb-4">
+                  <div>
+                    <h3 className="text-xl font-semibold text-white mb-2">Software Development Engineer I</h3>
+                    <p className="text-blue-400 font-medium">Amazon Web Services</p>
+                  </div>
+                  <span className="text-white/60 text-sm">2024 - Present</span>
                 </div>
-              ) : (
-                <div className="space-y-8">
-                {/* Senior Software Engineer */}
-                <div className="bg-white/5 rounded-lg p-6 border border-white/10" style={{ backdropFilter: 'none' }}>
-                  <div className="flex justify-between items-start mb-4">
-                    <div>
-                      <h3 className="text-xl font-semibold text-white mb-2">Senior Software Engineer</h3>
-                      <p className="text-blue-400 font-medium">TechCorp Solutions</p>
-                    </div>
-                    <span className="text-white/60 text-sm">2022 - Present</span>
-                  </div>
-                  <p className="text-white/80 mb-4">
-                    Leading development of scalable web applications using React, Node.js, and AWS. 
-                    Mentored junior developers and implemented CI/CD pipelines that reduced deployment time by 60%.
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    <span className="px-3 py-1 bg-blue-500/20 text-blue-300 rounded-full text-sm">React</span>
-                    <span className="px-3 py-1 bg-green-500/20 text-green-300 rounded-full text-sm">Node.js</span>
-                    <span className="px-3 py-1 bg-purple-500/20 text-purple-300 rounded-full text-sm">AWS</span>
-                    <span className="px-3 py-1 bg-yellow-500/20 text-yellow-300 rounded-full text-sm">TypeScript</span>
-                  </div>
+                <p className="text-white/80 mb-4">
+                  Developing and maintaining scalable cloud infrastructure and services. Working on AWS internal tools and services to improve developer productivity and system reliability.
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  <span className="px-3 py-1 bg-blue-500/20 text-blue-300 rounded-full text-sm">Java</span>
+                  <span className="px-3 py-1 bg-green-500/20 text-green-300 rounded-full text-sm">Python</span>
+                  <span className="px-3 py-1 bg-purple-500/20 text-purple-300 rounded-full text-sm">AWS</span>
+                  <span className="px-3 py-1 bg-yellow-500/20 text-yellow-300 rounded-full text-sm">Docker</span>
                 </div>
+              </div>
 
-                {/* Full Stack Developer */}
-                <div className="bg-white/5 rounded-lg p-6 border border-white/10">
-                  <div className="flex justify-between items-start mb-4">
-                    <div>
-                      <h3 className="text-xl font-semibold text-white mb-2">Full Stack Developer</h3>
-                      <p className="text-green-400 font-medium">InnovateLab</p>
-                    </div>
-                    <span className="text-white/60 text-sm">2020 - 2022</span>
+              {/* Software Development Engineer Intern */}
+              <div className="bg-white/5 rounded-lg p-6 border border-white/10">
+                <div className="flex justify-between items-start mb-4">
+                  <div>
+                    <h3 className="text-xl font-semibold text-white mb-2">Software Development Engineer Intern</h3>
+                    <p className="text-green-400 font-medium">Amazon Web Services</p>
                   </div>
-                  <p className="text-white/80 mb-4">
-                    Built and maintained multiple client applications using modern JavaScript frameworks. 
-                    Collaborated with design teams to create intuitive user experiences and optimized application performance.
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    <span className="px-3 py-1 bg-blue-500/20 text-blue-300 rounded-full text-sm">Vue.js</span>
-                    <span className="px-3 py-1 bg-green-500/20 text-green-300 rounded-full text-sm">Python</span>
-                    <span className="px-3 py-1 bg-purple-500/20 text-purple-300 rounded-full text-sm">Django</span>
-                    <span className="px-3 py-1 bg-yellow-500/20 text-yellow-300 rounded-full text-sm">PostgreSQL</span>
-                  </div>
+                  <span className="text-white/60 text-sm">2023 - 2024</span>
                 </div>
-
-                {/* Junior Developer */}
-                <div className="bg-white/5 rounded-lg p-6 border border-white/10">
-                  <div className="flex justify-between items-start mb-4">
-                    <div>
-                      <h3 className="text-xl font-semibold text-white mb-2">Junior Developer</h3>
-                      <p className="text-purple-400 font-medium">StartupHub</p>
-                    </div>
-                    <span className="text-white/60 text-sm">2018 - 2020</span>
-                  </div>
-                  <p className="text-white/80 mb-4">
-                    Contributed to the development of a SaaS platform serving 10,000+ users. 
-                    Implemented new features, fixed bugs, and participated in code reviews and agile development processes.
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    <span className="px-3 py-1 bg-blue-500/20 text-blue-300 rounded-full text-sm">JavaScript</span>
-                    <span className="px-3 py-1 bg-green-500/20 text-green-300 rounded-full text-sm">PHP</span>
-                    <span className="px-3 py-1 bg-purple-500/20 text-purple-300 rounded-full text-sm">MySQL</span>
-                    <span className="px-3 py-1 bg-yellow-500/20 text-yellow-300 rounded-full text-sm">Git</span>
-                  </div>
+                <p className="text-white/80 mb-4">
+                  Internship focused on developing cloud-native applications and services. Contributed to internal tools and participated in code reviews and agile development processes.
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  <span className="px-3 py-1 bg-blue-500/20 text-blue-300 rounded-full text-sm">Java</span>
+                  <span className="px-3 py-1 bg-green-500/20 text-green-300 rounded-full text-sm">Python</span>
+                  <span className="px-3 py-1 bg-purple-500/20 text-purple-300 rounded-full text-sm">AWS</span>
+                  <span className="px-3 py-1 bg-yellow-500/20 text-yellow-300 rounded-full text-sm">Git</span>
                 </div>
+              </div>
 
-                {/* Education */}
-                <div className="bg-white/5 rounded-lg p-6 border border-white/10">
-                  <h3 className="text-xl font-semibold text-white mb-4">Education</h3>
-                  <div className="space-y-4">
-                    <div>
-                      <h4 className="text-lg font-medium text-white">Bachelor of Computer Science</h4>
-                      <p className="text-blue-400">University of Technology</p>
-                      <p className="text-white/60 text-sm">2014 - 2018</p>
-                    </div>
-                    <div>
-                      <h4 className="text-lg font-medium text-white">Web Development Certification</h4>
-                      <p className="text-green-400">CodeAcademy</p>
-                      <p className="text-white/60 text-sm">2019</p>
-                    </div>
+              {/* Software Developer Intern */}
+              <div className="bg-white/5 rounded-lg p-6 border border-white/10">
+                <div className="flex justify-between items-start mb-4">
+                  <div>
+                    <h3 className="text-xl font-semibold text-white mb-2">Software Developer Intern</h3>
+                    <p className="text-purple-400 font-medium">Department of National Defence Canada</p>
+                  </div>
+                  <span className="text-white/60 text-sm">2022 - 2023</span>
+                </div>
+                <p className="text-white/80 mb-4">
+                  Developed software solutions for defense applications. Worked on secure systems and contributed to mission-critical software development projects.
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  <span className="px-3 py-1 bg-blue-500/20 text-blue-300 rounded-full text-sm">C++</span>
+                  <span className="px-3 py-1 bg-green-500/20 text-green-300 rounded-full text-sm">Python</span>
+                  <span className="px-3 py-1 bg-purple-500/20 text-purple-300 rounded-full text-sm">Linux</span>
+                  <span className="px-3 py-1 bg-yellow-500/20 text-yellow-300 rounded-full text-sm">Git</span>
+                </div>
+              </div>
+
+              {/* Full Stack Web Developer Intern */}
+              <div className="bg-white/5 rounded-lg p-6 border border-white/10">
+                <div className="flex justify-between items-start mb-4">
+                  <div>
+                    <h3 className="text-xl font-semibold text-white mb-2">Full Stack Web Developer Intern</h3>
+                    <p className="text-orange-400 font-medium">Qualiti7</p>
+                  </div>
+                  <span className="text-white/60 text-sm">2021 - 2022</span>
+                </div>
+                <p className="text-white/80 mb-4">
+                  Built and maintained web applications using modern JavaScript frameworks. Collaborated with design teams to create intuitive user experiences and optimized application performance.
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  <span className="px-3 py-1 bg-blue-500/20 text-blue-300 rounded-full text-sm">JavaScript</span>
+                  <span className="px-3 py-1 bg-green-500/20 text-green-300 rounded-full text-sm">React</span>
+                  <span className="px-3 py-1 bg-purple-500/20 text-purple-300 rounded-full text-sm">Node.js</span>
+                  <span className="px-3 py-1 bg-yellow-500/20 text-yellow-300 rounded-full text-sm">MongoDB</span>
+                </div>
+              </div>
+
+              {/* Education */}
+              <div className="bg-white/5 rounded-lg p-6 border border-white/10">
+                <h3 className="text-xl font-semibold text-white mb-4">Education</h3>
+                <div className="space-y-4">
+                  <div>
+                    <h4 className="text-lg font-medium text-white">Bachelor of Computer Science</h4>
+                    <p className="text-blue-400">University of Ottawa</p>
+                    <p className="text-white/60 text-sm">2020 - 2024</p>
                   </div>
                 </div>
               </div>
-              )}
             </div>
           </div>
         </div>
-      )}
+      </div>
 
       {/* Fixed bottom navbar */}
       <div style={{

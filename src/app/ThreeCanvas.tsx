@@ -23,8 +23,10 @@ export default function ThreeCanvas({ cardYOffset = 0, cardZRotation = 0 }: { ca
   // Keep the ref updated with the latest prop value
   useEffect(() => {
     cardYOffsetRef.current = cardYOffset;
+  }, [cardYOffset]);
+  useEffect(() => {
     cardZRotationRef.current = cardZRotation;
-  }, [cardYOffset, cardZRotation]);
+  }, [cardZRotation]);
 
   useEffect(() => {
     const mount = mountRef.current;
@@ -32,6 +34,8 @@ export default function ThreeCanvas({ cardYOffset = 0, cardZRotation = 0 }: { ca
 
     // Scene setup
     const scene = new THREE.Scene();
+    
+    // Set up camera so the card fills the parent div
     const width = 4;
     const height = 2.5;
     const frustumHeight = height;
@@ -43,7 +47,7 @@ export default function ThreeCanvas({ cardYOffset = 0, cardZRotation = 0 }: { ca
     );
     camera.position.set(0, 0, 8);
     camera.lookAt(0, 0, 0);
-
+    
     // Optimize renderer
     const renderer = new THREE.WebGLRenderer({ 
       antialias: true, 
@@ -58,6 +62,7 @@ export default function ThreeCanvas({ cardYOffset = 0, cardZRotation = 0 }: { ca
     mount.appendChild(renderer.domElement);
 
     // Business card geometry (flat rectangle with rounded corners)
+    // Use the same width/height as the camera setup
     const radius = 0.3;
     const cardShape = new THREE.Shape();
     cardShape.moveTo(-width/2 + radius, -height/2);
@@ -104,23 +109,32 @@ export default function ThreeCanvas({ cardYOffset = 0, cardZRotation = 0 }: { ca
 
     // Scale down the card for a more balanced look
     card.scale.set(0.45, 0.45, 1);
+    
+    // Add some thickness to the card for better shadow casting
     card.position.z = 0.05; // Move card slightly forward
 
-    // Lighting setup (no unused variables)
+    // Remove the two directional stage lights, leaving only the ambient light
+    // (No directional lights added)
+
+    // Add a spot light that shines on the face of the card
     const spotLight = new THREE.SpotLight(0xffffff, 2.2);
-    spotLight.position.set(0, 0, 5);
-    spotLight.target.position.set(0, 0, 0);
-    spotLight.angle = Math.PI / 2;
-    spotLight.penumbra = 0.4;
+    spotLight.position.set(0, 0, 5); // Further in front of the card
+    spotLight.target.position.set(0, 0, 0); // Aimed at the center of the card
+    spotLight.angle = Math.PI / 2; // Maximum wide beam
+    spotLight.penumbra = 0.4; // Softer edges
     spotLight.castShadow = true;
     spotLight.shadow.mapSize.width = 2048;
     spotLight.shadow.mapSize.height = 2048;
     scene.add(spotLight);
     scene.add(spotLight.target);
 
+    // Add ambient light for overall illumination
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
     scene.add(ambientLight);
 
+    // (HemisphereLight removed to prevent blue sheen in the background)
+
+    // Add a second directional light for better hand illumination
     const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
     directionalLight.position.set(2, 1, 2);
     directionalLight.castShadow = true;
@@ -128,11 +142,11 @@ export default function ThreeCanvas({ cardYOffset = 0, cardZRotation = 0 }: { ca
     directionalLight.shadow.mapSize.height = 1024;
     scene.add(directionalLight);
 
-    // Card group
+    // Create a group for the card and text so they move together
     const cardGroup = new THREE.Group();
     cardGroup.add(card);
-
-    // Text overlay
+    
+    // Add text overlay image on top of the card
     const textOverlayTexture = textureLoader.load('/text-overlay-1.png');
     textOverlayTexture.wrapS = THREE.ClampToEdgeWrapping;
     textOverlayTexture.wrapT = THREE.ClampToEdgeWrapping;
@@ -146,19 +160,41 @@ export default function ThreeCanvas({ cardYOffset = 0, cardZRotation = 0 }: { ca
       roughness: 0.0,
       envMapIntensity: 1.0
     });
-    const textOverlayGeometry = new THREE.PlaneGeometry(1.8, 1.125);
+    const textOverlayGeometry = new THREE.PlaneGeometry(1.8, 1.125); // Match card proportions
     const textOverlay = new THREE.Mesh(textOverlayGeometry, textOverlayMaterial);
-    textOverlay.position.set(0, 0, 0.08);
+    textOverlay.position.set(0, 0, 0.08); // Slightly above card surface
     cardGroup.add(textOverlay);
     scene.add(cardGroup);
 
+    // (Remove the soft spotlight effect white circle mesh from the scene)
+
+    // Remove the cartoon hand, wrist, and both sleeves (sphere, wrist, innerSleeve, outerSleeve) from the scene. Only keep the card, text overlay, and environment.
+
+    // (Glass wall mesh removed to eliminate white sheen)
+    // const glassWallGeometry = new THREE.PlaneGeometry(20, 20);
+    // const glassWallMaterial = new THREE.MeshBasicMaterial({
+    //   color: 0xffffff,
+    //   transparent: true,
+    //   opacity: 0.18,
+    //   depthWrite: false
+    // });
+    // const glassWall = new THREE.Mesh(glassWallGeometry, glassWallMaterial);
+    // glassWall.position.set(0, 0, -5);
+    // glassWall.receiveShadow = false;
+    // scene.add(glassWall);
+
     // Aurora/light streaks background effect - Refined version
     const auroraColors = [
-      0x60a5fa, 0xa78bfa, 0xf472b6, 0x34d399, 0xfbbf24, 0xec4899
+      0x60a5fa, // blue
+      0xa78bfa, // purple  
+      0xf472b6, // pink
+      0x34d399, // emerald
+      0xfbbf24, // amber
+      0xec4899  // rose
     ];
     const auroraPlanes: THREE.Mesh[] = [];
     const particles: THREE.Mesh[] = [];
-    const auroraCount = 6;
+    const auroraCount = 6; // Increased from 3 to 6 for more variety
     
     for (let i = 0; i < auroraCount; i++) {
       // Create more organic, varied shapes
@@ -264,7 +300,7 @@ export default function ThreeCanvas({ cardYOffset = 0, cardZRotation = 0 }: { ca
     mount.addEventListener('mousemove', handleMouseMove);
     mount.addEventListener('mouseleave', handleMouseLeave);
 
-    // Optimized animation loop
+    // Animate aurora planes and particles in the animation loop
     function animateAurora() {
       const t = performance.now() * 0.0003;
       
@@ -380,7 +416,7 @@ export default function ThreeCanvas({ cardYOffset = 0, cardZRotation = 0 }: { ca
         mount.removeChild(renderer.domElement);
       }
     };
-  }, [cardYOffset, cardZRotation]); // Fix useEffect dependency
+  }, []); // Only run once, rely on the ref for updates
 
   return (
     <div
