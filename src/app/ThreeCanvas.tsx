@@ -1,21 +1,18 @@
 "use client";
-import { useRef, useEffect, useCallback } from "react";
+import { useRef, useEffect } from "react";
 import * as THREE from "three";
-import type { Font } from 'three/examples/jsm/loaders/FontLoader';
-import { FontLoader } from 'three/examples/jsm/loaders/FontLoader';
-import { TextGeometry } from 'three/examples/jsm/geometries/TextGeometry';
 
-// Throttle function moved outside component
-const throttle = (func: Function, limit: number) => {
-  let inThrottle: boolean;
-  return function(this: any, ...args: any[]) {
+// Throttle function for mouse event handlers
+function throttleMouse(func: (event: MouseEvent) => void, limit: number): (event: MouseEvent) => void {
+  let inThrottle = false;
+  return function(event: MouseEvent) {
     if (!inThrottle) {
-      func.apply(this, args);
+      func(event);
       inThrottle = true;
-      setTimeout(() => inThrottle = false, limit);
+      setTimeout(() => { inThrottle = false; }, limit);
     }
-  }
-};
+  };
+}
 
 export default function ThreeCanvas({ cardYOffset = 0, cardZRotation = 0 }: { cardYOffset?: number, cardZRotation?: number }) {
   const mountRef = useRef<HTMLDivElement>(null);
@@ -26,10 +23,8 @@ export default function ThreeCanvas({ cardYOffset = 0, cardZRotation = 0 }: { ca
   // Keep the ref updated with the latest prop value
   useEffect(() => {
     cardYOffsetRef.current = cardYOffset;
-  }, [cardYOffset]);
-  useEffect(() => {
     cardZRotationRef.current = cardZRotation;
-  }, [cardZRotation]);
+  }, [cardYOffset, cardZRotation]);
 
   useEffect(() => {
     const mount = mountRef.current;
@@ -37,11 +32,8 @@ export default function ThreeCanvas({ cardYOffset = 0, cardZRotation = 0 }: { ca
 
     // Scene setup
     const scene = new THREE.Scene();
-    
-    // Set up camera so the card fills the parent div
     const width = 4;
     const height = 2.5;
-    const aspect = width / height;
     const frustumHeight = height;
     const frustumWidth = width;
     const camera = new THREE.OrthographicCamera(
@@ -51,7 +43,7 @@ export default function ThreeCanvas({ cardYOffset = 0, cardZRotation = 0 }: { ca
     );
     camera.position.set(0, 0, 8);
     camera.lookAt(0, 0, 0);
-    
+
     // Optimize renderer
     const renderer = new THREE.WebGLRenderer({ 
       antialias: true, 
@@ -66,7 +58,6 @@ export default function ThreeCanvas({ cardYOffset = 0, cardZRotation = 0 }: { ca
     mount.appendChild(renderer.domElement);
 
     // Business card geometry (flat rectangle with rounded corners)
-    // Use the same width/height as the camera setup
     const radius = 0.3;
     const cardShape = new THREE.Shape();
     cardShape.moveTo(-width/2 + radius, -height/2);
@@ -113,32 +104,23 @@ export default function ThreeCanvas({ cardYOffset = 0, cardZRotation = 0 }: { ca
 
     // Scale down the card for a more balanced look
     card.scale.set(0.45, 0.45, 1);
-    
-    // Add some thickness to the card for better shadow casting
     card.position.z = 0.05; // Move card slightly forward
 
-    // Remove the two directional stage lights, leaving only the ambient light
-    // (No directional lights added)
-
-    // Add a spot light that shines on the face of the card
+    // Lighting setup (no unused variables)
     const spotLight = new THREE.SpotLight(0xffffff, 2.2);
-    spotLight.position.set(0, 0, 5); // Further in front of the card
-    spotLight.target.position.set(0, 0, 0); // Aimed at the center of the card
-    spotLight.angle = Math.PI / 2; // Maximum wide beam
-    spotLight.penumbra = 0.4; // Softer edges
+    spotLight.position.set(0, 0, 5);
+    spotLight.target.position.set(0, 0, 0);
+    spotLight.angle = Math.PI / 2;
+    spotLight.penumbra = 0.4;
     spotLight.castShadow = true;
     spotLight.shadow.mapSize.width = 2048;
     spotLight.shadow.mapSize.height = 2048;
     scene.add(spotLight);
     scene.add(spotLight.target);
 
-    // Add ambient light for overall illumination
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
     scene.add(ambientLight);
 
-    // (HemisphereLight removed to prevent blue sheen in the background)
-
-    // Add a second directional light for better hand illumination
     const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
     directionalLight.position.set(2, 1, 2);
     directionalLight.castShadow = true;
@@ -146,11 +128,11 @@ export default function ThreeCanvas({ cardYOffset = 0, cardZRotation = 0 }: { ca
     directionalLight.shadow.mapSize.height = 1024;
     scene.add(directionalLight);
 
-    // Create a group for the card and text so they move together
+    // Card group
     const cardGroup = new THREE.Group();
     cardGroup.add(card);
-    
-    // Add text overlay image on top of the card
+
+    // Text overlay
     const textOverlayTexture = textureLoader.load('/text-overlay-1.png');
     textOverlayTexture.wrapS = THREE.ClampToEdgeWrapping;
     textOverlayTexture.wrapT = THREE.ClampToEdgeWrapping;
@@ -164,42 +146,19 @@ export default function ThreeCanvas({ cardYOffset = 0, cardZRotation = 0 }: { ca
       roughness: 0.0,
       envMapIntensity: 1.0
     });
-    const textOverlayGeometry = new THREE.PlaneGeometry(1.8, 1.125); // Match card proportions
+    const textOverlayGeometry = new THREE.PlaneGeometry(1.8, 1.125);
     const textOverlay = new THREE.Mesh(textOverlayGeometry, textOverlayMaterial);
-    textOverlay.position.set(0, 0, 0.08); // Slightly above card surface
+    textOverlay.position.set(0, 0, 0.08);
     cardGroup.add(textOverlay);
     scene.add(cardGroup);
 
-    // (Remove the soft spotlight effect white circle mesh from the scene)
-
-    // Remove the cartoon hand, wrist, and both sleeves (sphere, wrist, innerSleeve, outerSleeve) from the scene. Only keep the card, text overlay, and environment.
-
-    // (Glass wall mesh removed to eliminate white sheen)
-    // const glassWallGeometry = new THREE.PlaneGeometry(20, 20);
-    // const glassWallMaterial = new THREE.MeshBasicMaterial({
-    //   color: 0xffffff,
-    //   transparent: true,
-    //   opacity: 0.18,
-    //   depthWrite: false
-    // });
-    // const glassWall = new THREE.Mesh(glassWallGeometry, glassWallMaterial);
-    // glassWall.position.set(0, 0, -5);
-    // glassWall.receiveShadow = false;
-    // scene.add(glassWall);
-
     // Aurora/light streaks background effect - Refined version
     const auroraColors = [
-      0x60a5fa, // blue
-      0xa78bfa, // purple  
-      0xf472b6, // pink
-      0x34d399, // emerald
-      0xfbbf24, // amber
-      0xec4899  // rose
+      0x60a5fa, 0xa78bfa, 0xf472b6, 0x34d399, 0xfbbf24, 0xec4899
     ];
-    
-    let auroraPlanes: THREE.Mesh[] = [];
-    let particles: THREE.Mesh[] = [];
-    const auroraCount = 6; // Increased from 3 to 6 for more variety
+    const auroraPlanes: THREE.Mesh[] = [];
+    const particles: THREE.Mesh[] = [];
+    const auroraCount = 6;
     
     for (let i = 0; i < auroraCount; i++) {
       // Create more organic, varied shapes
@@ -213,9 +172,6 @@ export default function ThreeCanvas({ cardYOffset = 0, cardZRotation = 0 }: { ca
         new THREE.Vector3(width/4, -height/2, 0),
         new THREE.Vector3(width/2, height/2, 0)
       );
-      
-      const points = curve.getPoints(50);
-      const geometry = new THREE.BufferGeometry().setFromPoints(points);
       
       // Create tube geometry for more organic aurora shapes
       const tubeGeometry = new THREE.TubeGeometry(curve, 20, 0.1, 8, false);
@@ -276,7 +232,7 @@ export default function ThreeCanvas({ cardYOffset = 0, cardZRotation = 0 }: { ca
     let targetRotationX = 0;
     let targetRotationY = 0;
 
-    const handleMouseMove = throttle((event: MouseEvent) => {
+    const handleMouseMove = throttleMouse((event: MouseEvent) => {
       const rect = mount.getBoundingClientRect();
       
       // Get mouse position relative to the canvas center
@@ -309,23 +265,11 @@ export default function ThreeCanvas({ cardYOffset = 0, cardZRotation = 0 }: { ca
     mount.addEventListener('mouseleave', handleMouseLeave);
 
     // Optimized animation loop
-    const animate = () => {
-      // Apply target rotations with smooth interpolation
-      cardGroup.rotation.x += (targetRotationX - cardGroup.rotation.x) * 0.1;
-      cardGroup.rotation.y += (targetRotationY - cardGroup.rotation.y) * 0.1;
-      cardGroup.position.y += (cardYOffset - cardGroup.position.y) * 0.1;
-      
-      renderer.render(scene, camera);
-      animationRef.current = requestAnimationFrame(animate);
-    };
-    // Remove the call to animate(); Only call animateAurora() at the end of the effect.
-
-    // Animate aurora planes and particles in the animation loop
     function animateAurora() {
       const t = performance.now() * 0.0003;
       
       // Animate aurora tubes with more complex movement
-      auroraPlanes.forEach((mesh, i) => {
+      auroraPlanes.forEach((mesh: THREE.Mesh, i: number) => {
         const material = mesh.material as THREE.MeshBasicMaterial;
         material.opacity = 0.12 + 0.1 * Math.sin(t + i * 1.5);
         
@@ -345,7 +289,7 @@ export default function ThreeCanvas({ cardYOffset = 0, cardZRotation = 0 }: { ca
       });
       
       // Animate floating particles
-      particles.forEach((particle, i) => {
+      particles.forEach((particle: THREE.Mesh, i: number) => {
         const material = particle.material as THREE.MeshBasicMaterial;
         material.opacity = 0.2 + 0.3 * Math.sin(t + i * 0.6);
         
@@ -370,7 +314,6 @@ export default function ThreeCanvas({ cardYOffset = 0, cardZRotation = 0 }: { ca
     animateAurora();
 
     // Set base card size
-    const BASE_CARD_WIDTH = 4;
     const BASE_CARD_HEIGHT = 2.5;
 
     function resizeScene() {
@@ -393,12 +336,12 @@ export default function ThreeCanvas({ cardYOffset = 0, cardZRotation = 0 }: { ca
         cardGroup.scale.set(scale, scale, 1);
       }
       // Responsive aurora scaling
-      auroraPlanes.forEach((mesh, i) => {
+      auroraPlanes.forEach((mesh: THREE.Mesh) => {
         mesh.scale.set(scale * 1.1, scale * 1.1, 1);
       });
       
       // Responsive particle scaling
-      particles.forEach((particle, i) => {
+      particles.forEach((particle: THREE.Mesh) => {
         particle.scale.set(scale * 1.2, scale * 1.2, scale * 1.2);
       });
     }
@@ -420,13 +363,13 @@ export default function ThreeCanvas({ cardYOffset = 0, cardZRotation = 0 }: { ca
       cardMaterial.dispose();
       
       // Dispose of aurora geometries and materials
-      auroraPlanes.forEach(mesh => {
+      auroraPlanes.forEach((mesh: THREE.Mesh) => {
         mesh.geometry.dispose();
         (mesh.material as THREE.Material).dispose();
       });
       
       // Dispose of particle geometries and materials
-      particles.forEach(particle => {
+      particles.forEach((particle: THREE.Mesh) => {
         particle.geometry.dispose();
         (particle.material as THREE.Material).dispose();
       });
@@ -437,7 +380,7 @@ export default function ThreeCanvas({ cardYOffset = 0, cardZRotation = 0 }: { ca
         mount.removeChild(renderer.domElement);
       }
     };
-  }, []); // Only run once, rely on the ref for updates
+  }, [cardYOffset, cardZRotation]); // Fix useEffect dependency
 
   return (
     <div
