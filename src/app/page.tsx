@@ -75,7 +75,7 @@ export default function Home() {
           onClick={closeModal}
         >
           <div 
-            className="w-full max-w-4xl h-3/4 bg-black/80 backdrop-blur-sm rounded-2xl border border-white/20 overflow-hidden transition-all duration-300 ease-out"
+            className="w-full max-w-4xl h-3/4 bg-black/80 backdrop-blur-sm rounded-2xl border border-white/20 overflow-hidden transition-all duration-300 ease-out flex flex-col"
             style={{
               background: 'linear-gradient(135deg, rgba(0, 0, 0, 0.9) 0%, rgba(0, 0, 0, 0.8) 100%)',
               backdropFilter: 'blur(8px)',
@@ -89,7 +89,7 @@ export default function Home() {
             onClick={(e) => e.stopPropagation()}
           >
             {/* Modal Header */}
-            <div className="flex justify-between items-center p-6 border-b border-white/10">
+            <div className="flex justify-between items-center p-6 border-b border-white/10 shrink-0">
               <h2 className="text-2xl font-bold text-white">Professional Experience</h2>
               <button 
                 onClick={closeModal}
@@ -102,7 +102,7 @@ export default function Home() {
             </div>
 
             {/* Scrollable Content */}
-            <div className="h-full overflow-y-auto p-6" style={{ willChange: 'scroll-position' }}>
+            <div className="flex-1 overflow-y-auto p-6" style={{ willChange: 'scroll-position' }}>
               {!isModalContentLoaded ? (
                 <div className="flex items-center justify-center h-full">
                   <div className="text-white/60 text-lg">Loading...</div>
