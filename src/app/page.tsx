@@ -4,13 +4,54 @@ import { useRef, useEffect, useState, useCallback } from "react";
 import ThreeCanvas from "./ThreeCanvas";
 
 export default function Home() {
+  const [cardYOffset, setCardYOffset] = useState(0);
+  const [cardZRotation, setCardZRotation] = useState(0);
+  const [isJobModalOpen, setIsJobModalOpen] = useState(false);
+  const [isModalClosing, setIsModalClosing] = useState(false);
+  const [isModalContentLoaded, setIsModalContentLoaded] = useState(false);
+
+  const closeModal = () => {
+    setIsModalClosing(true);
+    setCardYOffset(0);
+    setCardZRotation(0);
+    setTimeout(() => {
+      setIsJobModalOpen(false);
+      setIsModalClosing(false);
+      setIsModalContentLoaded(false);
+    }, 300); // Match animation duration
+  };
+
+  const openModal = () => {
+    setCardYOffset(-3.5);
+    setCardZRotation(-0.4);
+    setIsJobModalOpen(true);
+    // Load content after modal animation starts
+    setTimeout(() => {
+      setIsModalContentLoaded(true);
+    }, 150); // Half of animation duration
+  };
+
   return (
     <div 
       className="min-h-screen flex flex-col items-center justify-center relative overflow-hidden"
       style={{
-        backgroundColor: '#000000'
+        backgroundColor: '#ffffff'
       }}
     >
+      {/* Animated gradient background */}
+      <div style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        width: '100vw',
+        height: '100vh',
+        zIndex: -2,
+        pointerEvents: 'none',
+        background: 'linear-gradient(120deg, #1e3a8a 0%, #9333ea 50%, #f472b6 100%)',
+        backgroundSize: '200% 200%',
+        animation: 'gradientMove 12s ease-in-out infinite'
+      }} />
+
       {/* Fullscreen Three.js 3D Background */}
       <div style={{
         width: '100vw',
@@ -21,11 +62,138 @@ export default function Home() {
         margin: 0,
         padding: 0,
         overflow: 'hidden',
-        background: '#000000',
+        background: 'transparent',
         zIndex: 0,
       }}>
-        <ThreeCanvas />
+        <ThreeCanvas cardYOffset={cardYOffset} cardZRotation={cardZRotation} />
       </div>
+
+      {/* Job Modal */}
+      {isJobModalOpen && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          onClick={closeModal}
+        >
+          <div 
+            className="w-full max-w-4xl h-3/4 bg-black/80 backdrop-blur-sm rounded-2xl border border-white/20 overflow-hidden transition-all duration-300 ease-out"
+            style={{
+              background: 'linear-gradient(135deg, rgba(0, 0, 0, 0.9) 0%, rgba(0, 0, 0, 0.8) 100%)',
+              backdropFilter: 'blur(8px)',
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
+              transform: isModalClosing ? 'translateY(100%)' : 'translateY(0)',
+              opacity: isModalClosing ? 0 : 1,
+              animation: isModalClosing ? 'none' : 'slideUp 0.3s ease-out',
+              willChange: 'transform, opacity',
+              backfaceVisibility: 'hidden'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="flex justify-between items-center p-6 border-b border-white/10">
+              <h2 className="text-2xl font-bold text-white">Professional Experience</h2>
+              <button 
+                onClick={closeModal}
+                className="text-white/70 hover:text-white transition-colors cursor-pointer"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Scrollable Content */}
+            <div className="h-full overflow-y-auto p-6" style={{ willChange: 'scroll-position' }}>
+              {!isModalContentLoaded ? (
+                <div className="flex items-center justify-center h-full">
+                  <div className="text-white/60 text-lg">Loading...</div>
+                </div>
+              ) : (
+                <div className="space-y-8">
+                {/* Senior Software Engineer */}
+                <div className="bg-white/5 rounded-lg p-6 border border-white/10" style={{ backdropFilter: 'none' }}>
+                  <div className="flex justify-between items-start mb-4">
+                    <div>
+                      <h3 className="text-xl font-semibold text-white mb-2">Senior Software Engineer</h3>
+                      <p className="text-blue-400 font-medium">TechCorp Solutions</p>
+                    </div>
+                    <span className="text-white/60 text-sm">2022 - Present</span>
+                  </div>
+                  <p className="text-white/80 mb-4">
+                    Leading development of scalable web applications using React, Node.js, and AWS. 
+                    Mentored junior developers and implemented CI/CD pipelines that reduced deployment time by 60%.
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    <span className="px-3 py-1 bg-blue-500/20 text-blue-300 rounded-full text-sm">React</span>
+                    <span className="px-3 py-1 bg-green-500/20 text-green-300 rounded-full text-sm">Node.js</span>
+                    <span className="px-3 py-1 bg-purple-500/20 text-purple-300 rounded-full text-sm">AWS</span>
+                    <span className="px-3 py-1 bg-yellow-500/20 text-yellow-300 rounded-full text-sm">TypeScript</span>
+                  </div>
+                </div>
+
+                {/* Full Stack Developer */}
+                <div className="bg-white/5 rounded-lg p-6 border border-white/10">
+                  <div className="flex justify-between items-start mb-4">
+                    <div>
+                      <h3 className="text-xl font-semibold text-white mb-2">Full Stack Developer</h3>
+                      <p className="text-green-400 font-medium">InnovateLab</p>
+                    </div>
+                    <span className="text-white/60 text-sm">2020 - 2022</span>
+                  </div>
+                  <p className="text-white/80 mb-4">
+                    Built and maintained multiple client applications using modern JavaScript frameworks. 
+                    Collaborated with design teams to create intuitive user experiences and optimized application performance.
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    <span className="px-3 py-1 bg-blue-500/20 text-blue-300 rounded-full text-sm">Vue.js</span>
+                    <span className="px-3 py-1 bg-green-500/20 text-green-300 rounded-full text-sm">Python</span>
+                    <span className="px-3 py-1 bg-purple-500/20 text-purple-300 rounded-full text-sm">Django</span>
+                    <span className="px-3 py-1 bg-yellow-500/20 text-yellow-300 rounded-full text-sm">PostgreSQL</span>
+                  </div>
+                </div>
+
+                {/* Junior Developer */}
+                <div className="bg-white/5 rounded-lg p-6 border border-white/10">
+                  <div className="flex justify-between items-start mb-4">
+                    <div>
+                      <h3 className="text-xl font-semibold text-white mb-2">Junior Developer</h3>
+                      <p className="text-purple-400 font-medium">StartupHub</p>
+                    </div>
+                    <span className="text-white/60 text-sm">2018 - 2020</span>
+                  </div>
+                  <p className="text-white/80 mb-4">
+                    Contributed to the development of a SaaS platform serving 10,000+ users. 
+                    Implemented new features, fixed bugs, and participated in code reviews and agile development processes.
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    <span className="px-3 py-1 bg-blue-500/20 text-blue-300 rounded-full text-sm">JavaScript</span>
+                    <span className="px-3 py-1 bg-green-500/20 text-green-300 rounded-full text-sm">PHP</span>
+                    <span className="px-3 py-1 bg-purple-500/20 text-purple-300 rounded-full text-sm">MySQL</span>
+                    <span className="px-3 py-1 bg-yellow-500/20 text-yellow-300 rounded-full text-sm">Git</span>
+                  </div>
+                </div>
+
+                {/* Education */}
+                <div className="bg-white/5 rounded-lg p-6 border border-white/10">
+                  <h3 className="text-xl font-semibold text-white mb-4">Education</h3>
+                  <div className="space-y-4">
+                    <div>
+                      <h4 className="text-lg font-medium text-white">Bachelor of Computer Science</h4>
+                      <p className="text-blue-400">University of Technology</p>
+                      <p className="text-white/60 text-sm">2014 - 2018</p>
+                    </div>
+                    <div>
+                      <h4 className="text-lg font-medium text-white">Web Development Certification</h4>
+                      <p className="text-green-400">CodeAcademy</p>
+                      <p className="text-white/60 text-sm">2019</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Fixed bottom navbar */}
       <div style={{
@@ -45,7 +213,7 @@ export default function Home() {
         }}>
           <div className="flex justify-around items-center gap-8">
             {/* Profile icon */}
-            <div className="flex flex-col items-center group cursor-pointer">
+            <div className="flex flex-col items-center group cursor-pointer" onClick={() => { setCardYOffset(0); setCardZRotation(0); }}>
               <div className="w-8 h-8 text-white/90 group-hover:text-white transition-all duration-300 group-hover:scale-110" style={{
                 filter: 'drop-shadow(0 0 8px rgba(255, 255, 255, 0.3))'
               }}>
@@ -56,7 +224,7 @@ export default function Home() {
             </div>
 
             {/* Jobs icon */}
-            <div className="flex flex-col items-center group cursor-pointer">
+            <div className="flex flex-col items-center group cursor-pointer" onClick={openModal}>
               <div className="w-8 h-8 text-white/90 group-hover:text-white transition-all duration-300 group-hover:scale-110" style={{
                 filter: 'drop-shadow(0 0 8px rgba(255, 255, 255, 0.3))'
               }}>

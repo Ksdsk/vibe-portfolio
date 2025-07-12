@@ -59,7 +59,7 @@ export default function ThreeCanvas({ cardYOffset = 0, cardZRotation = 0 }: { ca
       powerPreference: "high-performance"
     });
     renderer.setSize(mount.clientWidth, mount.clientHeight);
-    renderer.setClearColor(0x000000, 1);
+    renderer.setClearColor(0x18191c, 1);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -174,24 +174,18 @@ export default function ThreeCanvas({ cardYOffset = 0, cardZRotation = 0 }: { ca
 
     // Remove the cartoon hand, wrist, and both sleeves (sphere, wrist, innerSleeve, outerSleeve) from the scene. Only keep the card, text overlay, and environment.
 
-    // Add a glass wall behind all components
-    const glassWallGeometry = new THREE.PlaneGeometry(20, 20); // Large enough to cover the entire view
-    const glassWallMaterial = new THREE.MeshPhysicalMaterial({
-      color: 0xffffff, // White for neutral glass
-      transparent: true,
-      opacity: 0.5, // More visible for testing
-      metalness: 0.1, // Slight metallic quality
-      roughness: 0.0,
-      transmission: 0.8,
-      thickness: 0.5,
-      envMapIntensity: 1.0,
-      clearcoat: 1.0, // Add clearcoat for extra shine
-      clearcoatRoughness: 0.0
-    });
-    const glassWall = new THREE.Mesh(glassWallGeometry, glassWallMaterial);
-    glassWall.position.set(0, 0, -5); // Behind the card
-    glassWall.receiveShadow = true;
-    scene.add(glassWall);
+    // (Glass wall mesh removed to eliminate white sheen)
+    // const glassWallGeometry = new THREE.PlaneGeometry(20, 20);
+    // const glassWallMaterial = new THREE.MeshBasicMaterial({
+    //   color: 0xffffff,
+    //   transparent: true,
+    //   opacity: 0.18,
+    //   depthWrite: false
+    // });
+    // const glassWall = new THREE.Mesh(glassWallGeometry, glassWallMaterial);
+    // glassWall.position.set(0, 0, -5);
+    // glassWall.receiveShadow = false;
+    // scene.add(glassWall);
 
     // Aurora/light streaks background effect - Refined version
     const auroraColors = [
