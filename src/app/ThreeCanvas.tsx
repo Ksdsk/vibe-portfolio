@@ -35,6 +35,18 @@ export default function ThreeCanvas({ cardYOffset = 0, cardZRotation = 0 }: { ca
     // Scene setup
     const scene = new THREE.Scene();
     
+    // Add environment map for reflections
+    const cubeTextureLoader = new THREE.CubeTextureLoader();
+    const environmentMap = cubeTextureLoader.load([
+      '/metallic-textured-background.jpg', // right
+      '/metallic-textured-background.jpg', // left
+      '/metallic-textured-background.jpg', // top
+      '/metallic-textured-background.jpg', // bottom
+      '/metallic-textured-background.jpg', // front
+      '/metallic-textured-background.jpg'  // back
+    ]);
+    scene.environment = environmentMap;
+    
     // Set up camera so the card fills the parent div
     const width = 4;
     const height = 2.5;
@@ -91,17 +103,17 @@ export default function ThreeCanvas({ cardYOffset = 0, cardZRotation = 0 }: { ca
       cardGeometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvAttribute, 2));
     }
 
-    // Load the brushed metal image texture
+    // Load the paper image texture
     const textureLoader = new THREE.TextureLoader();
-    const brushedTexture = textureLoader.load('/brushed-metal.jpg');
-    brushedTexture.wrapS = THREE.ClampToEdgeWrapping;
-    brushedTexture.wrapT = THREE.ClampToEdgeWrapping;
-    brushedTexture.repeat.set(1, 1);
+    const paperTexture = textureLoader.load('/paper-1.jpeg');
+    paperTexture.wrapS = THREE.ClampToEdgeWrapping;
+    paperTexture.wrapT = THREE.ClampToEdgeWrapping;
+    paperTexture.repeat.set(1, 1);
     const cardMaterial = new THREE.MeshStandardMaterial({ 
       color: 0xffffff, // pure white
-      map: brushedTexture,
-      metalness: 0.7,
-      roughness: 0.38
+      map: paperTexture,
+      metalness: 0.1, // Lower metalness for paper
+      roughness: 0.7  // Higher roughness for paper
     });
     const card = new THREE.Mesh(cardGeometry, cardMaterial);
     card.castShadow = true;
@@ -132,8 +144,6 @@ export default function ThreeCanvas({ cardYOffset = 0, cardZRotation = 0 }: { ca
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
     scene.add(ambientLight);
 
-    // (HemisphereLight removed to prevent blue sheen in the background)
-
     // Add a second directional light for better hand illumination
     const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
     directionalLight.position.set(2, 1, 2);
@@ -141,6 +151,19 @@ export default function ThreeCanvas({ cardYOffset = 0, cardZRotation = 0 }: { ca
     directionalLight.shadow.mapSize.width = 1024;
     directionalLight.shadow.mapSize.height = 1024;
     scene.add(directionalLight);
+    
+    // Add ambient fading lights for subtle reflection effects
+    const ambientLight1 = new THREE.AmbientLight(0x60a5fa, 0.3); // Blue ambient
+    scene.add(ambientLight1);
+    
+    const ambientLight2 = new THREE.AmbientLight(0xf472b6, 0.3); // Pink ambient
+    scene.add(ambientLight2);
+    
+    const ambientLight3 = new THREE.AmbientLight(0x34d399, 0.2); // Green ambient
+    scene.add(ambientLight3);
+    
+    // Store ambient light references for animation
+    const fadingLights = [ambientLight1, ambientLight2, ambientLight3];
 
     // Create a group for the card and text so they move together
     const cardGroup = new THREE.Group();
@@ -156,32 +179,21 @@ export default function ThreeCanvas({ cardYOffset = 0, cardZRotation = 0 }: { ca
       transparent: true,
       alphaTest: 0.1,
       side: THREE.DoubleSide,
-      metalness: 1.0,
-      roughness: 0.0,
-      envMapIntensity: 1.0
+      metalness: 1.0, // Maximum metalness for highly reflective surface
+      roughness: 0.1, // Very low roughness for mirror-like reflection
+      color: 0xffffff, // White base for better reflection
+      emissive: 0x222222, // Subtle glow to make reflection more visible
+      opacity: 1,
+      envMapIntensity: 1.5 // Increased environment map intensity for stronger reflection
     });
     const textOverlayGeometry = new THREE.PlaneGeometry(1.8, 1.125); // Match card proportions
     const textOverlay = new THREE.Mesh(textOverlayGeometry, textOverlayMaterial);
-    textOverlay.position.set(0, 0, 0.08); // Slightly above card surface
+    textOverlay.position.set(0, 0, 0.06); // Slightly above card surface for subtle embedded look
     cardGroup.add(textOverlay);
     scene.add(cardGroup);
-
-    // (Remove the soft spotlight effect white circle mesh from the scene)
-
-    // Remove the cartoon hand, wrist, and both sleeves (sphere, wrist, innerSleeve, outerSleeve) from the scene. Only keep the card, text overlay, and environment.
-
-    // (Glass wall mesh removed to eliminate white sheen)
-    // const glassWallGeometry = new THREE.PlaneGeometry(20, 20);
-    // const glassWallMaterial = new THREE.MeshBasicMaterial({
-    //   color: 0xffffff,
-    //   transparent: true,
-    //   opacity: 0.18,
-    //   depthWrite: false
-    // });
-    // const glassWall = new THREE.Mesh(glassWallGeometry, glassWallMaterial);
-    // glassWall.position.set(0, 0, -5);
-    // glassWall.receiveShadow = false;
-    // scene.add(glassWall);
+    
+    // Store textOverlay reference for animation
+    const textOverlayRef = textOverlay;
 
     // Aurora/light streaks background effect - Refined version
     const auroraColors = [
@@ -344,6 +356,21 @@ export default function ThreeCanvas({ cardYOffset = 0, cardZRotation = 0 }: { ca
       cardGroup.rotation.y += (targetRotationY - cardGroup.rotation.y) * 0.1;
       cardGroup.position.y += (cardYOffsetRef.current - cardGroup.position.y) * 0.04;
       cardGroup.rotation.z += (cardZRotationRef.current - cardGroup.rotation.z) * 0.04;
+      
+      // Subtle text overlay reflection animation
+      const time = performance.now() * 0.001;
+      const textMaterial = textOverlayRef.material as THREE.MeshStandardMaterial;
+      textMaterial.envMapIntensity = 0.8 + 0.2 * Math.sin(time * 2);
+      
+      // Animate ambient fading lights for subtle reflection effects
+      fadingLights.forEach((light: THREE.AmbientLight, index: number) => {
+        const speed = 0.3 + index * 0.2;
+        const baseIntensity = 0.2 + index * 0.1;
+        const fadeIntensity = 0.15 + index * 0.05;
+        
+        // Create gentle fading effect
+        light.intensity = baseIntensity + fadeIntensity * Math.sin(time * speed);
+      });
       renderer.render(scene, camera);
       animationRef.current = requestAnimationFrame(animateAurora);
     }
